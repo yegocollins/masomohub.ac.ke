@@ -1,0 +1,177 @@
+Backend Tasks (Node.js, Express, MongoDB, Gemini API)
+1. Project Setup
+
+✅ Set up Node.js and Express server
+✅ Install required dependencies (express, mongoose, cors, jsonwebtoken, dotenv, etc.)
+✅ Configure environment variables (.env for MongoDB URI, JWT secret, API keys)
+✅ Connect MongoDB using Mongoose
+2. Authentication & User Management
+
+✅ Implement JWT-based authentication (sign-up, login)
+✅ Set up role-based authentication (Student, Educator)
+✅ Create authentication middleware for protected routes
+3. Database Schema & Models
+
+✅ Define User model (name, email, password, role, major, workspace)
+✅ Define Workspace model (name, educatorId, studentIds)
+✅ Define Assignment model (title, description, workspaceId, due date)
+✅ Define Submission model (studentId, assignmentId, AI usage score, flagged status, grade)
+✅ Define Review model (comment, upvotes, reviewerId, assignmentId)
+✅ Define AI Moderation Rules model (educatorId, max AI usage allowed, restricted topics)
+4. API Endpoints Development
+
+✅ Auth Routes: (/api/auth)
+
+    POST /signup – Register user
+    POST /login – Authenticate user
+    GET /profile – Fetch user profile - access_profile  
+    
+    ROLES
+    =========================================================
+    student=["read", "submit"]
+    educator=["read", "write", "create_workspace"]
+    admin=["read", "write", "manage_users"]
+
+✅ Workspace Routes: (/api/workspaces)
+
+    POST /create – Educators create workspaces - create_workspace
+    GET /:id – Fetch workspace details - read
+
+✅ Assignment Routes: (/api/assignments)
+
+    POST /create – Educators create assignments - access_workspace
+    GET /workspace/:id – Fetch assignments for a workspace - access_workspace
+
+✅ Submission Routes: (/api/submissions)
+
+    POST /submit – Students submit assignments - submit_assignment
+    GET /:id – Fetch submission details - access_assignment
+    PUT /:id/revise – Resubmit flagged assignments - submit_assignment
+
+✅ Review Routes: (/api/reviews)
+
+    POST /:assignmentId – Students add peer reviews - create_review
+    GET /:assignmentId – Fetch all reviews for an assignment - access_review
+    PUT /:reviewId/upvote – Upvote a comment - create_review
+
+✅ AI Moderation Routes: (/api/ai)
+
+    POST /moderate – Educators define AI moderation rules - create_workspace
+    POST /check – Analyze student submission for AI dependency using Gemini API - create_worspace
+
+5. AI Integration (Gemini API)
+
+✅ Implement AI moderation to check assignment completion level
+✅ Define moderation parameters to prevent AI from generating full answers
+✅ Implement AI response filtering based on educator rules
+6. Flagging & Submission Validation
+
+✅ Implement AI-overuse detection & flagging system
+✅ Allow students to revise flagged assignments before final submission
+7. Grading & Analytics
+
+✅ Allow educators to manually grade submissions
+✅ Implement analytics for tracking student engagement & AI reliance
+Frontend Tasks (React.js + Tailwind CSS)
+1. Project Setup
+
+✅ Initialize React project using Vite
+✅ Install dependencies (react-router-dom, axios, redux, tailwindcss)
+✅ Configure Tailwind for styling
+2. Authentication & Routing
+
+✅ Implement login and sign-up pages
+✅ Set up role-based routing (Student & Educator dashboards)
+3. Student Dashboard
+
+✅ Show list of assigned workspaces
+✅ Display assignments for selected workspace
+✅ AI-assisted chat (limited help, no direct answers)
+✅ Implement rich-text editor for completing assignments
+✅ Show peer comments & allow upvoting
+4. Assignment Submission
+
+✅ Submit assignments through rich-text editor
+✅ Show AI-reliance warning if flagged
+✅ Allow students to revise before final submission
+5. Peer Review System
+
+✅ Show assignment reviews
+✅ Allow commenting & upvoting comments
+6. Educator Dashboard
+
+✅ Create & manage workspaces
+✅ Create & manage assignments
+✅ Define AI moderation rules (toggle settings)
+✅ View & grade submissions
+✅ View flagged assignments
+✅ Access student performance analytics
+7. UI Enhancements & Finalization
+
+✅ Implement responsive design with Tailwind
+✅ Add loading states & error handling
+✅ Optimize API calls with caching for efficiency
+
+
+student = ['access_dashboard', 'access_assignment', 'access_grades', 'access_chat', 'edit_assignment', 'access_profile'];
+
+
+TESTS
+======================================
+moderations
+{
+    "message":"Hello"
+}
+
+login
+=========================
+{
+    "email":"hawona1234@example.com",
+    "password":"password"
+}
+
+
+{
+    "f_name": "John",
+    "l_name": "Doe",
+    "email": "johndoe@example.com",
+    "password": "securepassword",
+    "major": ["Computer Science"],
+    "role": "student"
+}
+
+Educator
+===========================
+{
+    "f_name": "Jon",
+    "l_name": "Doe",
+    "email": "jondoe@example.com",
+    "password": "securepassword",
+    "major": ["Computer Science"],
+    "role": "educator"
+}
+
+{
+    "email": "jondoe@example.com",
+    "password": "securepassword"
+}
+
+Assignment
+===================================
+{
+	"title":"gRPC implementation in Java",
+        "description":"Discuss the usage of gRPC in microservices",
+        "dueDate":"2025-0s4-30T15:00:00.000Z,
+        "workspaceId":"67d76600b3c4fb416504a4e5"
+}
+
+Submission
+=====================================
+{
+"assignmentId":"67d7777a06a449d8c9d6fe21",
+"userId":"67d4fbe887130d8567e2da22",
+"submission":"gRPC is used in microservices for efficient, high-performance communication between services. It leverages HTTP/2, protocol buffers, and bidirectional streaming for low-latency, scalable interactions. gRPC ensures strong typing, automatic code generation, and supports multiple languages, making it ideal for distributed systems requiring fast, reliable, and structured API communication."
+}
+
+
+mongodb+srv://trulyhawona:C59FfcTlWsnmXQa6@cluster0.4cbmtsc.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
