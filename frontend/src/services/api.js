@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://ai-moderator-x64.vercel.app/api";
+const API_URL = import.meta.env.VITE_API_URL || "https://masomohub-ac-ke-taupe.vercel.app/api";
 
 const api = axios.create({
   baseURL: API_URL,
