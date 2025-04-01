@@ -17,6 +17,8 @@ router.post('/signup', Auth.signup);
 router.post('/login', Auth.login);
 router.get('/profile/', auth, Auth.profile);
 
+router.get('/users/students',auth, Auth.getStudents);
+
 /**
  * WORKSPACE ROUTES
  */
@@ -24,7 +26,7 @@ router.post('/workspaces', auth, Workspace.createWorkspace);
 router.get('/workspaces/', auth, Workspace.getWorkspace);
 router.get('/workspaces/:id', auth, Workspace.getWorkspaceById);
 router.get('/workspaces/student/:id', auth, Workspace.getStudentWorkspace);
-router.put('/workspaces/:id', auth, Workspace.addStudent);
+router.patch('/workspaces/:id', auth, Workspace.addStudent);
 
 /**
  * SUBMISSION ROUTES
@@ -37,11 +39,10 @@ router.put('/submissions/:id', auth, Submission.updateSubmission);
 /**
  * ASSIGNMENT ROUTES
  */
-router.post('/assignments', auth, checkRole('educator'), Assignment.createAssignment);
-router.get('/assignments', auth, Assignment.getAssignments);
-router.get('/assignments/:id', auth, Assignment.getAssignmentById);
-router.put('/assignments/:id', auth, checkRole('educator'), Assignment.updateAssignment);
-router.delete('/assignments/:id', auth, checkRole('educator'), Assignment.deleteAssignment);
+router.post('/assignments',auth, Assignment.createAssignment);
+router.get('/assignments',auth, Assignment.getAssignment);
+router.get('/assignments/:workspaceId', auth, Assignment.getAssignmentById);
+
 
 /**
  * CHAT ROUTES
