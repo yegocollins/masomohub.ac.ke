@@ -21,6 +21,8 @@ class Assignment{
         }
     }
 
+    //Come back to this. Might be an error
+
     static async createAssignment(req, res){
         try{
             const { title, description, dueDate, workspaceId } = req.body;
