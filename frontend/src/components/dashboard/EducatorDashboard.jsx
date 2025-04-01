@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { assignmentService, workspaceService } from '../../services/api';
 import Modal from '../layout/Modal';
 
+
 export default function EducatorDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
