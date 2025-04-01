@@ -3,58 +3,24 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 const AssignmentSchema = new Schema({
-    title: {
+    title:{
         type: String,
-        required: true,
-        trim: true
-    },
-    description: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    workspaceId: {
-        type: Schema.Types.ObjectId,
-        ref: 'workspaces',
         required: true
     },
-    educatorId: {
-        type: Schema.Types.ObjectId,
-        ref: 'users',
-        required: true
-    },
-    dueDate: {
-        type: Date,
-        required: true
-    },
-    maxScore: {
-        type: Number,
-        default: 100
-    },
-    status: {
+    description:{
         type: String,
-        enum: ['draft', 'published', 'closed'],
-        default: 'draft'
+        required: true
     },
-    assignmentResponses: [{
-        type: Schema.Types.ObjectId,
-        ref: 'submissions'
-    }],
-    createdAt: {
-        type: Date,
-        default: Date.now
+    workspaceId:{
+        type: String,
+        required: true
     },
-    updatedAt: {
-        type: Date,
-        default: Date.now
+    dueDate:{
+        type: Date
+    },
+    assignmentResponses:{
+        type: [String]
     }
 });
 
-// Update the updatedAt timestamp before saving
-AssignmentSchema.pre('save', function(next) {
-    this.updatedAt = Date.now();
-    next();
-});
-
-module.exports = mongoose.model('assignments', AssignmentSchema);
 module.exports = mongoose.model('assignments', AssignmentSchema);
