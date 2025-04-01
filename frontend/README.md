@@ -17,3 +17,9 @@ if student - introduce interactive editor, chat,  and workspace
 check if workspaces where studentid in workspace.students[];
 
 implement chat
+
+workspace/
+========================
+create workspace
+get workspace assignments
+get workspace students

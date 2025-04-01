@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { assignmentService, workspaceService } from '../services/api';
 import ChatWindow from '../components/ChatWindow';
 import RichTextEditor from '../components/layout/RichTextEditor';
+import Modal from '../components/layout/Modal';
 
 export default function Dashboard() {
   const { user, isEducator, isStudent } = useAuth();
@@ -17,6 +18,13 @@ export default function Dashboard() {
   const [activeSection, setActiveSection] = useState('workspaces');
   const [students, setStudents] = useState([]);
   const [aiAgentData, setAIAgentData] = useState([]);
+  const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false);
+  const [newAssignment, setNewAssignment] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    workspaceId: '',
+  });
 
   useEffect(() => {
     if (user?._id) {
@@ -31,10 +39,26 @@ export default function Dashboard() {
     }
   }, [studentWorkspaces]);
 
+  const getWorkspaceAssignments = async (workspaceId) => {
+    try {
+      const assignments = await assignmentService.getWorkSpcaceAssignments(workspaceId);
+      return assignments.length;
+    } catch (error) {
+      console.error(`Error fetching assignments for workspace ${workspaceId}:`, error);
+      return 0;
+    }
+  };
+
   const loadWorkspaces = async () => {
     try {
       const response = await workspaceService.getWorkspace(user._id);
-      setWorkspaces(response || []);
+      const workspacesWithAssignments = await Promise.all(
+        (response || []).map(async (workspace) => {
+          const assignmentCount = await getWorkspaceAssignments(workspace._id);
+          return { ...workspace, assignmentCount };
+        })
+      );
+      setWorkspaces(workspacesWithAssignments);
     } catch (error) {
       console.error('Error loading workspaces:', error);
     } finally {
@@ -67,7 +91,7 @@ export default function Dashboard() {
 
   const loadStudents = async () => {
     try {
-      const response = await workspaceService.getStudents(user._id); // Replace with actual API call
+      const response = await workspaceService.getStudents(user._id);
       setStudents(response || []);
     } catch (error) {
       console.error('Error loading students:', error);
@@ -76,7 +100,7 @@ export default function Dashboard() {
 
   const loadAIAgentData = async () => {
     try {
-      const response = await workspaceService.getAIAgentData(user._id); // Replace with actual API call
+      const response = await workspaceService.getAIAgentData(user._id);
       setAIAgentData(response || []);
     } catch (error) {
       console.error('Error loading AI agent data:', error);
@@ -91,13 +115,30 @@ export default function Dashboard() {
   const handleSectionChange = async (section) => {
     setActiveSection(section);
     if (section === 'workspaces' && isEducator) {
-      await loadWorkspaces(); // Ensure workspaces are loaded when switching to this section
+      await loadWorkspaces();
     } else if (section === 'assignments' && isEducator) {
       await loadAssignments();
     } else if (section === 'students' && isEducator) {
       await loadStudents();
     } else if (section === 'ai agent' && isEducator) {
       await loadAIAgentData();
+    }
+  };
+
+  const handleCreateAssignmentChange = (e) => {
+    const { name, value } = e.target;
+    setNewAssignment((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateAssignmentSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await assignmentService.createAssignment(newAssignment);
+      setShowCreateAssignmentModal(false);
+      setNewAssignment({ title: '', description: '', dueDate: '', workspaceId: '' });
+      await loadAssignments();
+    } catch (error) {
+      console.error('Error creating assignment:', error);
     }
   };
 
@@ -153,12 +194,11 @@ export default function Dashboard() {
     return (
       <div className="container mx-auto px-4 py-8 bg-gray-100 w-screen h-screen">
         <div className="grid grid-cols-12 gap-4 h-full">
-          {/* Sidebar */}
           <div className="col-span-3 bg-white p-4 rounded-lg shadow-md">
             <h2 className="text-xl font-bold mb-4">Educator Panel</h2>
             <p className="text-sm text-gray-600 mb-6">Welcome, {user?.f_name} {user?.l_name}</p>
             <nav className="space-y-4">
-              {['workspaces', 'assignments', 'students','ai agent'].map((section) => (
+              {['workspaces', 'assignments', 'students', 'ai agent'].map((section) => (
                 <button
                   key={section}
                   className={`w-full text-left px-4 py-2 rounded-lg border ${
@@ -182,21 +222,19 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="col-span-9 bg-white p-6 rounded-lg shadow-md overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">
               {activeSection.charAt(0).toUpperCase() + activeSection.slice(1)}
             </h2>
             <p className="text-gray-600">Here you can manage your {activeSection}.</p>
 
-            {/* Render workspace table if activeSection is 'workspaces' */}
-            {activeSection === 'workspaces' && isEducator && (
+            {activeSection === 'workspaces' && (
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-300">
                   <thead>
                     <tr>
-                      <th className="px-4 py-2 border-b">Workspace Name</th>
-                      <th className="px-4 py-2 border-b">Created At</th>
+                      <th className="px-4 py-2 border-b">Workspace</th>
+                      <th className="px-4 py-2 border-b">Assignments</th>
                       <th className="px-4 py-2 border-b">Students</th>
                       <th className="px-4 py-2 border-b">Actions</th>
                     </tr>
@@ -205,7 +243,7 @@ export default function Dashboard() {
                     {workspaces.map((workspace) => (
                       <tr key={workspace._id}>
                         <td className="px-4 py-2 border-b">{workspace.name}</td>
-                        <td className="px-4 py-2 border-b">{new Date(workspace.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-2 border-b">{workspace.assignmentCount}</td>
                         <td className="px-4 py-2 border-b">{workspace.students.length}</td>
                         <td className="px-4 py-2 border-b">
                           <button
@@ -229,46 +267,53 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Render assignments table */}
-            {activeSection === 'assignments' && isEducator && (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-300">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 border-b">Assignment Description</th>
-                      <th className="px-4 py-2 border-b">Due Date</th>
-                      <th className="px-4 py-2 border-b">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {assignments.map((assignment) => (
-                      <tr key={assignment._id}>
-                        <td className="px-4 py-2 border-b">{assignment.description}</td>
-                        <td className="px-4 py-2 border-b">{new Date(assignment.dueDate).toLocaleDateString()}</td>
-                        <td className="px-4 py-2 border-b">
-                          <button
-                            className="text-blue-500 hover:underline"
-                            onClick={() => navigate(`/assignment/${assignment._id}`)}
-                          >
-                            View
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {assignments.length === 0 && (
+            {activeSection === 'assignments' && (
+              <>
+                <button
+                  className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  onClick={() => setShowCreateAssignmentModal(true)}
+                >
+                  Create Assignment
+                </button>
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-300">
+                    <thead>
                       <tr>
-                        <td colSpan="3" className="px-4 py-2 text-center text-gray-500">
-                          No assignments available.
-                        </td>
+                        <th className="px-4 py-2 border-b">Assignment Description</th>
+                        <th className="px-4 py-2 border-b">Due Date</th>
+                        <th className="px-4 py-2 border-b">Actions</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {assignments.map((assignment) => (
+                        <tr key={assignment._id}>
+                          <td className="px-4 py-2 border-b">{assignment.description}</td>
+                          <td className="px-4 py-2 border-b">{new Date(assignment.dueDate).toLocaleDateString()}</td>
+                          <td className="px-4 py-2 border-b">
+                            <button
+                              className="text-blue-500 hover:underline"
+                              onClick={() => navigate(`/assignment/${assignment._id}`)}
+                            >
+                              View
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {assignments.length === 0 && (
+                        <tr>
+                          <td colSpan="3" className="px-4 py-2 text-center text-gray-500">
+                            No assignments available.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </>
             )}
 
-            {/* Render students table */}
-            {activeSection === 'students' && isEducator && (
+            {activeSection === 'students' && (
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-300">
                   <thead>
@@ -305,8 +350,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* Render AI agent data */}
-            {activeSection === 'ai agent' && isEducator && (
+            {activeSection === 'ai agent' && (
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border border-gray-300">
                   <thead>
@@ -347,5 +391,6 @@ export default function Dashboard() {
       </div>
     );
   }
+
   return null;
 }
