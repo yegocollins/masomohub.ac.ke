@@ -19,11 +19,20 @@ export default function Dashboard() {
   const [students, setStudents] = useState([]);
   const [aiAgentData, setAIAgentData] = useState([]);
   const [showCreateAssignmentModal, setShowCreateAssignmentModal] = useState(false);
+  const [showCreateWorkspaceModal, setShowCreateWorkspaceModal] = useState(false);
+  const [showAddStudentModal, setShowAddStudentModal] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState(null);
+  const [availableStudents, setAvailableStudents] = useState([]);
+  const [selectedStudent, setSelectedStudent] = useState('');
   const [newAssignment, setNewAssignment] = useState({
     title: '',
     description: '',
     dueDate: '',
     workspaceId: '',
+  });
+  const [newWorkspace, setNewWorkspace] = useState({
+    name: '',
+    description: '',
   });
 
   useEffect(() => {
@@ -79,11 +88,21 @@ export default function Dashboard() {
 
   const loadAssignments = async () => {
     try {
-      const workspaceIds = studentWorkspaces.map((workspace) => workspace._id);
-      const assignmentsArray = await Promise.all(
-        workspaceIds.map((id) => assignmentService.getWorkSpcaceAssignments(id))
-      );
-      setAssignments(assignmentsArray.flat() || []);
+      if (isEducator) {
+        // For educators, get assignments from all their workspaces
+        const workspaceIds = workspaces.map((workspace) => workspace._id);
+        const assignmentsArray = await Promise.all(
+          workspaceIds.map((id) => assignmentService.getWorkSpcaceAssignments(id))
+        );
+        setAssignments(assignmentsArray.flat() || []);
+      } else {
+        // For students, keep the existing logic
+        const workspaceIds = studentWorkspaces.map((workspace) => workspace._id);
+        const assignmentsArray = await Promise.all(
+          workspaceIds.map((id) => assignmentService.getWorkSpcaceAssignments(id))
+        );
+        setAssignments(assignmentsArray.flat() || []);
+      }
     } catch (error) {
       console.error('Error loading assignments:', error);
     }
@@ -105,6 +124,37 @@ export default function Dashboard() {
     } catch (error) {
       console.error('Error loading AI agent data:', error);
     }
+  };
+
+  const loadAvailableStudents = async (workspaceId) => {
+    try {
+      // Get all students and filter out those already in the workspace
+      const allStudents = await workspaceService.getStudents(user._id);
+      const workspace = workspaces.find(w => w._id === workspaceId);
+      const existingStudentIds = workspace.students.map(s => s._id);
+      const available = allStudents.filter(student => !existingStudentIds.includes(student._id));
+      setAvailableStudents(available);
+    } catch (error) {
+      console.error('Error loading available students:', error);
+    }
+  };
+
+  const handleAddStudent = async (e) => {
+    e.preventDefault();
+    try {
+      await workspaceService.addStudentToWorkspace(selectedWorkspace._id, selectedStudent);
+      setShowAddStudentModal(false);
+      setSelectedStudent('');
+      await loadWorkspaces(); // Refresh workspaces to update student count
+    } catch (error) {
+      console.error('Error adding student to workspace:', error);
+    }
+  };
+
+  const handleOpenAddStudentModal = async (workspace) => {
+    setSelectedWorkspace(workspace);
+    await loadAvailableStudents(workspace._id);
+    setShowAddStudentModal(true);
   };
 
   const handleAssignmentChange = (e) => {
@@ -130,6 +180,10 @@ export default function Dashboard() {
     setNewAssignment((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleWorkspaceSelect = (e) => {
+    setNewAssignment(prev => ({ ...prev, workspaceId: e.target.value }));
+  };
+
   const handleCreateAssignmentSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -139,6 +193,26 @@ export default function Dashboard() {
       await loadAssignments();
     } catch (error) {
       console.error('Error creating assignment:', error);
+    }
+  };
+
+  const handleCreateWorkspaceChange = (e) => {
+    const { name, value } = e.target;
+    setNewWorkspace((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleCreateWorkspaceSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await workspaceService.createWorkspace({
+        ...newWorkspace,
+        educatorId: user._id
+      });
+      setShowCreateWorkspaceModal(false);
+      setNewWorkspace({ name: '', description: '' });
+      await loadWorkspaces();
+    } catch (error) {
+      console.error('Error creating workspace:', error);
     }
   };
 
@@ -229,42 +303,149 @@ export default function Dashboard() {
             <p className="text-gray-600">Here you can manage your {activeSection}.</p>
 
             {activeSection === 'workspaces' && (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white border border-gray-300">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 border-b">Workspace</th>
-                      <th className="px-4 py-2 border-b">Assignments</th>
-                      <th className="px-4 py-2 border-b">Students</th>
-                      <th className="px-4 py-2 border-b">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {workspaces.map((workspace) => (
-                      <tr key={workspace._id}>
-                        <td className="px-4 py-2 border-b">{workspace.name}</td>
-                        <td className="px-4 py-2 border-b">{workspace.assignmentCount}</td>
-                        <td className="px-4 py-2 border-b">{workspace.students.length}</td>
-                        <td className="px-4 py-2 border-b">
+              <>
+                <button
+                  className="mb-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                  onClick={() => setShowCreateWorkspaceModal(true)}
+                >
+                  Create Workspace
+                </button>
+
+                {showCreateWorkspaceModal && (
+                  <Modal onClose={() => setShowCreateWorkspaceModal(false)}>
+                    <div className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Create New Workspace</h2>
+                      <form onSubmit={handleCreateWorkspaceSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Workspace Name</label>
+                          <input
+                            type="text"
+                            name="name"
+                            value={newWorkspace.name}
+                            onChange={handleCreateWorkspaceChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Description</label>
+                          <textarea
+                            name="description"
+                            value={newWorkspace.description}
+                            onChange={handleCreateWorkspaceChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            rows="4"
+                            required
+                          />
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-6">
                           <button
-                            className="text-blue-500 hover:underline"
-                            onClick={() => navigate(`/workspace/${workspace._id}`)}
+                            type="button"
+                            onClick={() => setShowCreateWorkspaceModal(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                           >
-                            View
+                            Cancel
                           </button>
-                        </td>
-                      </tr>
-                    ))}
-                    {workspaces.length === 0 && (
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                          >
+                            Create Workspace
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </Modal>
+                )}
+
+                <div className="overflow-x-auto">
+                  <table className="min-w-full bg-white border border-gray-300">
+                    <thead>
                       <tr>
-                        <td colSpan="4" className="px-4 py-2 text-center text-gray-500">
-                          No workspaces available.
-                        </td>
+                        <th className="px-4 py-2 border-b">Workspace</th>
+                        <th className="px-4 py-2 border-b">Assignments</th>
+                        <th className="px-4 py-2 border-b">Students</th>
+                        <th className="px-4 py-2 border-b">Actions</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    </thead>
+                    <tbody>
+                      {workspaces.map((workspace) => (
+                        <tr key={workspace._id}>
+                          <td className="px-4 py-2 border-b">{workspace.name}</td>
+                          <td className="px-4 py-2 border-b">{workspace.assignmentCount}</td>
+                          <td className="px-4 py-2 border-b">{workspace.students.length}</td>
+                          <td className="px-4 py-2 border-b space-x-2">
+                            {/* <button
+                              className="text-blue-500 hover:underline"
+                              onClick={() => navigate(`/workspace/${workspace._id}`)}
+                            >
+                              View
+                            </button> */}
+                            <button
+                              className="text-green-500 hover:underline"
+                              onClick={() => handleOpenAddStudentModal(workspace)}
+                            >
+                              Add Student
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {workspaces.length === 0 && (
+                        <tr>
+                          <td colSpan="4" className="px-4 py-2 text-center text-gray-500">
+                            No workspaces available.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {showAddStudentModal && (
+                  <Modal onClose={() => setShowAddStudentModal(false)}>
+                    <div className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Add Student to {selectedWorkspace?.name}</h2>
+                      <form onSubmit={handleAddStudent} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Select Student</label>
+                          <select
+                            value={selectedStudent}
+                            onChange={(e) => setSelectedStudent(e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="">Select a student</option>
+                            {availableStudents.map((student) => (
+                              <option key={student._id} value={student._id}>
+                                {student.name} ({student.email})
+                              </option>
+                            ))}
+                          </select>
+                          {availableStudents.length === 0 && (
+                            <p className="mt-2 text-sm text-gray-500">No available students to add.</p>
+                          )}
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-6">
+                          <button
+                            type="button"
+                            onClick={() => setShowAddStudentModal(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                            disabled={availableStudents.length === 0}
+                          >
+                            Add Student
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </Modal>
+                )}
+              </>
             )}
 
             {activeSection === 'assignments' && (
@@ -276,11 +457,88 @@ export default function Dashboard() {
                   Create Assignment
                 </button>
 
+                {showCreateAssignmentModal && (
+                  <Modal onClose={() => setShowCreateAssignmentModal(false)}>
+                    <div className="p-6">
+                      <h2 className="text-2xl font-bold mb-4">Create New Assignment</h2>
+                      <form onSubmit={handleCreateAssignmentSubmit} className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Title</label>
+                          <input
+                            type="text"
+                            name="title"
+                            value={newAssignment.title}
+                            onChange={handleCreateAssignmentChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Description</label>
+                          <textarea
+                            name="description"
+                            value={newAssignment.description}
+                            onChange={handleCreateAssignmentChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            rows="4"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                          <input
+                            type="datetime-local"
+                            name="dueDate"
+                            value={newAssignment.dueDate}
+                            onChange={handleCreateAssignmentChange}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700">Workspace</label>
+                          <select
+                            name="workspaceId"
+                            value={newAssignment.workspaceId}
+                            onChange={handleWorkspaceSelect}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                            required
+                          >
+                            <option value="">Select a workspace</option>
+                            {workspaces.map((workspace) => (
+                              <option key={workspace._id} value={workspace._id}>
+                                {workspace.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex justify-end space-x-3 mt-6">
+                          <button
+                            type="button"
+                            onClick={() => setShowCreateAssignmentModal(false)}
+                            className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="submit"
+                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                          >
+                            Create Assignment
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </Modal>
+                )}
+
                 <div className="overflow-x-auto">
                   <table className="min-w-full bg-white border border-gray-300">
                     <thead>
                       <tr>
-                        <th className="px-4 py-2 border-b">Assignment Description</th>
+                        <th className="px-4 py-2 border-b">Title</th>
+                        <th className="px-4 py-2 border-b">Description</th>
+                        <th className="px-4 py-2 border-b">Workspace</th>
                         <th className="px-4 py-2 border-b">Due Date</th>
                         <th className="px-4 py-2 border-b">Actions</th>
                       </tr>
@@ -288,7 +546,11 @@ export default function Dashboard() {
                     <tbody>
                       {assignments.map((assignment) => (
                         <tr key={assignment._id}>
+                          <td className="px-4 py-2 border-b">{assignment.title}</td>
                           <td className="px-4 py-2 border-b">{assignment.description}</td>
+                          <td className="px-4 py-2 border-b">
+                            {workspaces.find(w => w._id === assignment.workspaceId)?.name || 'Unknown Workspace'}
+                          </td>
                           <td className="px-4 py-2 border-b">{new Date(assignment.dueDate).toLocaleDateString()}</td>
                           <td className="px-4 py-2 border-b">
                             <button
@@ -302,7 +564,7 @@ export default function Dashboard() {
                       ))}
                       {assignments.length === 0 && (
                         <tr>
-                          <td colSpan="3" className="px-4 py-2 text-center text-gray-500">
+                          <td colSpan="5" className="px-4 py-2 text-center text-gray-500">
                             No assignments available.
                           </td>
                         </tr>

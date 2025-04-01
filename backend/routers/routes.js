@@ -37,10 +37,11 @@ router.put('/submissions/:id', auth, Submission.updateSubmission);
 /**
  * ASSIGNMENT ROUTES
  */
-router.post('/assignments',auth, Assignment.createAssignment);
-router.get('/assignments',auth, Assignment.getAssignment);
-router.get('/assignments/:workspaceId', auth, Assignment.getAssignmentById);
-
+router.post('/assignments', auth, checkRole('educator'), Assignment.createAssignment);
+router.get('/assignments', auth, Assignment.getAssignments);
+router.get('/assignments/:id', auth, Assignment.getAssignmentById);
+router.put('/assignments/:id', auth, checkRole('educator'), Assignment.updateAssignment);
+router.delete('/assignments/:id', auth, checkRole('educator'), Assignment.deleteAssignment);
 
 /**
  * CHAT ROUTES
