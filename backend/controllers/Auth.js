@@ -82,6 +82,21 @@ class Auth{
         }
     }
 
+    static async getStudents(req, res) {
+        try {
+            const users = await User.find({role:"student"}).select("-password");
+    
+            if (users.length === 0) {
+                return res.status(404).json({ message: "No student found" });
+            }
+    
+            res.status(200).json(users);
+        } catch (e) {
+            res.status(500).json({ error: "Error getting students" });
+        }
+    }
+    
+
 }
 
 module.exports = Auth;
