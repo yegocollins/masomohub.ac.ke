@@ -1,6 +1,6 @@
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://192.168.0.105:3000/api";
+const API_URL = import.meta.env.VITE_API_URL || "masomohub-ac-ke-taupe.vercel.app/api";
 
 const api = axios.create({
   baseURL: API_URL,
