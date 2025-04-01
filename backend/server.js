@@ -14,7 +14,7 @@ const port = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.FRONTEND_URL || 'http://localhost:5173', // Vite's default port
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT','PATCH','DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 };
 
