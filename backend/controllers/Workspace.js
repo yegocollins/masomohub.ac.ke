@@ -83,32 +83,37 @@ class Workspace{
 
     }
  
-    static async addStudent(req, res){
-        try{
-            
+    static async addStudent(req, res) {
+        try {
             const { student } = req.body;
-
+    
+            // Find the workspace by ID
             const workspace = await space.findById(req.params.id);
-            if(!workspace){
+            if (!workspace) {
                 return res.status(404).send("Workspace not found");
             }
-
             
 
-            const Student = new Workspace();
-
-            const isStudent = await Student.isStudent(student);
-            if(!isStudent){
+            const checkStudent = new Workspace();
+            // Check if the student exists and has the role "student"
+            const isStudent = checkStudent.isStudent({student});
+            if (!isStudent) {
                 return res.status(400).send("User is not found or is not a student");
             }
-
-            workspace.students = workspace.students.concat(req.body.student);
-            await workspace.save();
-            res.status(200).send(workspace);
-        }catch(e){
-            res.status(400).send(`Error adding student to workspace: ${e}`);
+    
+            // Add the student if not already in the workspace
+            if (!workspace.students.includes(student)) {
+                workspace.students.push(student);
+                await workspace.save();
+                return res.status(200).json({ message: "Student added successfully", workspace });
+            } else {
+                return res.status(400).send("Student already exists in the workspace");
+            }
+        } catch (e) {
+            res.status(500).send(`Error adding student to workspace: ${e.message}`);
         }
     }
+    
 }
 
 module.exports = Workspace;
