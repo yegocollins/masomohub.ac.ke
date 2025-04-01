@@ -6,6 +6,7 @@ const checkRole = require('../middleware/authorize');
 
 class Assignment{
     
+    
     async isStudent(userId) {
         try {
             const user = await users.findById(userId);
@@ -20,8 +21,6 @@ class Assignment{
             return false;
         }
     }
-
-    //Come back to this. Might be an error
 
     static async createAssignment(req, res){
         try{
