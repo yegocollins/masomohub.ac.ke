@@ -14,11 +14,16 @@ class Chat{
             const rule = await moderationRules.find({});
             if(!rule){
                 rule = [
-                    "AI should not provide direct answers to assignments, only guidance.",
-                    "Limit AI responses to a maximum of 100 words per response.",
-                    "AI can provide hints and explanations but must not generate full essays or reports.",
-                    "AI should cite sources for external references but should not provide full content.",
-                    "AI should not generate full code solutions; it may only suggest debugging tips"
+                    "Strictly follow these rules before answering:",
+                    "Don't provide direct answers to assignment questions" ,
+                    "Encourage critical thinking and problem-solving skills" , 
+                    "Only provide hints and guidance, not solutions"  ,
+                    "Don't provide direct answers to assignment questions" , 
+                    "Encourage critical thinking and problem-solving skills" , 
+                    "Only provide hints and guidance, not solutions" , 
+                    "Additional Rules"  ,
+                    "Don't provide code snippets or examples",  
+                    "Require students to explain their approach before providing hints"  
                 ]
             }
             
