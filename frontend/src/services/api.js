@@ -97,7 +97,7 @@ export const workspaceService = {
       handleApiError(error, "Get Workspaces");
     }
   },
-// Educator id
+
   getWorkspace: async (id) => {
     try {
       const response = await api.get(`/workspaces/${id}`);
@@ -107,7 +107,15 @@ export const workspaceService = {
     }
   },
 
-  // Student id
+  getStudents: async () => {
+    try {
+      const response = await api.get('/users/students');
+      return response.data;
+    } catch (error) {
+      handleApiError(error, "Get Students");
+    }
+  },
+
   getStudentWorkspace: async (id) => {
     try {
       const response = await api.get(`/workspaces/student/${id}`);
@@ -119,7 +127,7 @@ export const workspaceService = {
 
   addStudent: async (id, studentId) => {
     try {
-      const response = await api.patch(`/workspaces/${id}`, { studentId });
+      const response = await api.patch(`/workspaces/${id}`, { student: studentId });
       return response.data;
     } catch (error) {
       handleApiError(error, "Add Student");
@@ -147,8 +155,6 @@ export const assignmentService = {
     }
   },
 
-
-// Used for getting assignments to students.
   getWorkSpcaceAssignments: async (workspaceId) => {
     try {
       const response = await api.get(`/assignments/${workspaceId}`);
