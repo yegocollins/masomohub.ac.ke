@@ -110,7 +110,7 @@ class Workspace{
                 return res.status(400).send("Student already exists in the workspace");
             }
         } catch (e) {
-            return res.status(500).send(`Error adding student to workspace: ${e.message}`);
+            res.status(500).send(`Error adding student to workspace: ${e.message}`);
         }
     }
     
