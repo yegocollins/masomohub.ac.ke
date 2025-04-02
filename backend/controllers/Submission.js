@@ -1,7 +1,5 @@
 const submissionModel = require('../models/submission_model');
 const userModel = require('../models/user_model');
-const assignmentModel = require('../models/assignment_model');
-
 
 class Submission {
     
@@ -45,10 +43,16 @@ class Submission {
             res.status(400).send(`Error fetching submissions ${e}`);
         }
     }
-
-    static async getSubmissionById(req, res) {
+    
+    static async getSubmissionByAssignmentIdAndStudentId(req, res) {
         try {
-            const submission = await submissionModel.findById(req.params.id);
+            const { assignmentId, studentId } = req.params;
+
+            if (!assignmentId || !studentId) {
+                return res.status(404).send("No submissions for this assignment and student");
+            }
+
+            const submission = await submissionModel.find({ assignmentId, studentId });
             if (!submission) {
                 return res.status(404).send("Submission not found");
             }
@@ -57,6 +61,18 @@ class Submission {
             res.status(400).send(`Error fetching submissions ${e}`);
         }
     }
+
+    // static async getSubmissionById(req, res) {
+    //     try {
+    //         const submission = await submissionModel.findById(req.params.id);
+    //         if (!submission) {
+    //             return res.status(404).send("Submission not found");
+    //         }
+    //         res.status(200).send(submission);
+    //     } catch (e) {
+    //         res.status(400).send(`Error fetching submissions ${e}`);
+    //     }
+    // }
 
     static async updateSubmission(req, res) {
         try {
