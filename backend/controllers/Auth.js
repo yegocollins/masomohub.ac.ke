@@ -32,33 +32,43 @@ class Auth {
 
     static async login(req, res) {
         try {
+            console.log("Login request received");
             const { email, password } = req.body;
+    
             if (!email || !password) {
+                console.log("Missing credentials");
                 return res.status(400).json({ error: "Email and password are required" });
             }
-
-            let user = await User.findOne({ email });
+    
+            console.log("Checking if user exists...");
+            let user = await User.findOne({ email }).lean();
             if (!user) {
-                return res.status(401).json({ error: "You don’t have an account. Sign up" });
+                console.log("User not found");
+                return res.status(401).json({ error: "No account found. Please sign up." });
             }
-
+    
+            console.log("Comparing password...");
             let isPasswordValid = await bcrypt.compare(password, user.password);
             if (!isPasswordValid) {
+                console.log("Wrong password");
                 return res.status(401).json({ error: "Wrong password" });
             }
-
+    
+            console.log("Generating token...");
             const token = jwt.sign(
                 { user_id: user._id, user_role: user.role },
                 process.env.TOKEN_SECRET,
                 { expiresIn: '1h' }
             );
-
+            console.log("Token generated successfully");
+    
             return res.status(200).json({ token });
         } catch (e) {
             console.error("Login error:", e);
-            return res.status(500).json({ error: "Login failed" });
+            return res.status(500).json({ error: "Login failed", details: e.message });
         }
     }
+    
 
     static async profile(req, res) {
         try {
