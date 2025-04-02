@@ -1,103 +1,90 @@
 const User = require('../models/user_model');
-// const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-class Auth{
-  
-    static async signup(req, res){
-   
-        const {f_name, l_name, email, password, major, role} = req.body; 
-        
-        let hashedPassword = await bcrypt.hash(password,10);
-        
-        let user =  await User.findOne({email});
+class Auth {
+    static async signup(req, res) {
+        console.time("Signup Execution Time");
+        try {
+            const { f_name, l_name, email, password, major, role } = req.body;
 
-        if(user){
-            return res.status(400).send("User already Exists");
-        } else{
-            try{
-                const user = new User({
-                    f_name,
-                    l_name,
-                    email,
-                    password: hashedPassword,
-                    major,
-                    role 
-                })
-
-            const response = await user.save();
-            res.status(201).json({message: `Sign up successful: ${response}`});
-            }catch(e){
-                return res.status(500).json({e: 'Registration Failed'});
-                console.error(e);
+            if (!f_name || !l_name || !email || !password || !major || !role) {
+                return res.status(400).json({ error: "All fields are required" });
             }
+
+            let existingUser = await User.findOne({ email });
+            if (existingUser) {
+                return res.status(400).json({ error: "User already exists" });
+            }
+
+            let hashedPassword = await bcrypt.hash(password, 10);
+            let newUser = new User({ f_name, l_name, email, password: hashedPassword, major, role });
+            const response = await newUser.save();
+
+            console.timeEnd("Signup Execution Time");
+            return res.status(201).json({ message: "Signup successful", user: response });
+        } catch (e) {
+            console.error("Signup error:", e);
+            return res.status(500).json({ error: "Registration failed", details: e.message });
         }
     }
 
-    /**
-     * JWT token is generated when user logs
-     * in and is used to authenticate the user 
-     * @param {*} req 
-     * @param {*} res 
-     * @returns 
-     */
-    static async login(req, res){
-        try{
-            const {email, password} = req.body;
-
-            let user =  await User.findOne({email});
-
-            if(!user){
-                return res.status(401).send("You dont have an account. Sign up");
-            } 
-
-            let comparePassword = await bcrypt.compare(password, user.password);
-
-            if(!comparePassword){
-                return res.status(401).json({error:"Wrong Password"});
+    static async login(req, res) {
+        try {
+            const { email, password } = req.body;
+            if (!email || !password) {
+                return res.status(400).json({ error: "Email and password are required" });
             }
-            console.log("PERMISSION:",user.role.permission);
-            const token = jwt.sign({user_id:user._id, user_role:user.role}, process.env.TOKEN_SECRET, {expiresIn:60*60});
-            
-            res.status(200).json({token});
-        } catch(e){
-                return res.status(500).json({error:"Login failed"});
+
+            let user = await User.findOne({ email });
+            if (!user) {
+                return res.status(401).json({ error: "You don’t have an account. Sign up" });
+            }
+
+            let isPasswordValid = await bcrypt.compare(password, user.password);
+            if (!isPasswordValid) {
+                return res.status(401).json({ error: "Wrong password" });
+            }
+
+            const token = jwt.sign(
+                { user_id: user._id, user_role: user.role },
+                process.env.TOKEN_SECRET,
+                { expiresIn: '1h' }
+            );
+
+            return res.status(200).json({ token });
+        } catch (e) {
+            console.error("Login error:", e);
+            return res.status(500).json({ error: "Login failed" });
         }
-        
     }
-    
-    static async profile(req, res){
-        try{
+
+    static async profile(req, res) {
+        try {
             const user = await User.findById(req.user.user_id).select("-password");
-
-            if (!user){
-               return res.status(404).json("User not found");
+            if (!user) {
+                return res.status(404).json({ error: "User not found" });
             }
-
-            res.status(200).json(user);
-        } catch(e){
-            console.error("Error fetching profile:", e);
-            return res.status(500).json({error:"Error fetching profile"});
+            return res.status(200).json(user);
+        } catch (e) {
+            console.error("Profile error:", e);
+            return res.status(500).json({ error: "Error fetching profile" });
         }
     }
 
     static async getStudents(req, res) {
         try {
-            const users = await User.find({role:"student"}).select("-password");
-    
+            const users = await User.find({ role: "student" }).select("-password");
             if (users.length === 0) {
-                return res.status(404).json({ message: "No student found" });
+                return res.status(404).json({ message: "No students found" });
             }
-    
-            res.status(200).json(users);
+            return res.status(200).json(users);
         } catch (e) {
+            console.error("Get students error:", e);
             return res.status(500).json({ error: "Error getting students" });
         }
     }
-    
-
 }
 
 module.exports = Auth;
