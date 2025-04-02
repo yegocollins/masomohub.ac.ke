@@ -3,7 +3,6 @@ const chatModel = require('../models/chat_model');
 const moderationRules = require('../models/moderation_model');
 const aiService = require('../utils/gemini_service');
 
-
 class Chat{
     
     static async createChat(req, res){
