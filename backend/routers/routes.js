@@ -33,9 +33,9 @@ router.patch('/workspaces/:id', auth, Workspace.addStudent);
  */
 router.post('/submissions',auth, Submission.createSubmission);
 router.get('/submissions', auth, Submission.getSubmission);
-router.get('/submissions/:id', auth, Submission.getSubmissionById);
+router.get('/submissions/:assignmentId/:studentId', auth, Submission.getSubmissionByAssignmentIdAndStudentId);
 router.put('/submissions/:id', auth, Submission.updateSubmission);
-  
+
 /**
  * ASSIGNMENT ROUTES
  */
