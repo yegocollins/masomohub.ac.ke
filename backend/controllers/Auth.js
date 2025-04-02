@@ -4,7 +4,6 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 require('dotenv').config();
 
-
 class Auth{
   
     static async signup(req, res){
@@ -31,7 +30,7 @@ class Auth{
             const response = await user.save();
             res.status(201).json({message: `Sign up successful: ${response}`});
             }catch(e){
-                res.status(500).json({e: 'Registration Failed'});
+                return res.status(500).json({e: 'Registration Failed'});
                 console.error(e);
             }
         }
@@ -57,14 +56,14 @@ class Auth{
             let comparePassword = await bcrypt.compare(password, user.password);
 
             if(!comparePassword){
-                res.status(401).json({error:"Wrong Password"});
+                return res.status(401).json({error:"Wrong Password"});
             }
             console.log("PERMISSION:",user.role.permission);
             const token = jwt.sign({user_id:user._id, user_role:user.role}, process.env.TOKEN_SECRET, {expiresIn:60*60});
             
             res.status(200).json({token});
         } catch(e){
-                res.status(500).json({error:"Login failed"});
+                return res.status(500).json({error:"Login failed"});
         }
         
     }
@@ -74,12 +73,13 @@ class Auth{
             const user = await User.findById(req.user.user_id).select("-password");
 
             if (!user){
-                res.status(404).json("User not found");
+               return res.status(404).json("User not found");
             }
 
             res.status(200).json(user);
         } catch(e){
-            res.status(500).json({error:"Error fetching profile"});
+            console.error("Error fetching profile:", e);
+            return res.status(500).json({error:"Error fetching profile"});
         }
     }
 
@@ -93,7 +93,7 @@ class Auth{
     
             res.status(200).json(users);
         } catch (e) {
-            res.status(500).json({ error: "Error getting students" });
+            return res.status(500).json({ error: "Error getting students" });
         }
     }
     
