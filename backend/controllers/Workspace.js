@@ -4,7 +4,6 @@ const users = require('../models/user_model');
 const auth = require('../middleware/authenticate');
 const checkRole = require('../middleware/authorize');
 
-
 class Workspace{
 
     async isStudent(userId) {
@@ -35,7 +34,7 @@ class Workspace{
             await workspace.save();
             res.status(201).send(workspace);
         }catch(e){
-            res.status(400).send(e);
+            return res.status(400).send(e);
         }
     }
 
@@ -44,7 +43,7 @@ class Workspace{
             const workspace = await space.find({});
             res.status(200).send(workspace);
         }catch(e){
-            res.status(400).send(e, "Error fetching workspaces");
+            return res.status(400).send(e, "Error fetching workspaces");
         }
     }
 
@@ -62,7 +61,7 @@ class Workspace{
             res.status(200).json(workspaces);
         } catch (error) {
             console.error("Error fetching workspaces:", error);
-            res.status(500).json({ message: "Internal Server Error", error: error.message });
+            return res.status(500).json({ message: "Internal Server Error", error: error.message });
         }
     }
     
@@ -73,13 +72,13 @@ class Workspace{
             const workspaces = await space.find({students:studentId});
             
             if(!workspaces.length){
-                res.status(404).json({message: "No workspaces found"});
+                return res.status(404).json({message: "No workspaces found"});
             }
 
             res.status(200).json(workspaces);
         } catch (error){
             console.error("Error fetching workspace");
-            res.status(500).json({message: "Internal server error", error: error.message});
+            return res.status(500).json({message: "Internal server error", error: error.message});
         }
 
     }
@@ -111,7 +110,7 @@ class Workspace{
                 return res.status(400).send("Student already exists in the workspace");
             }
         } catch (e) {
-            res.status(500).send(`Error adding student to workspace: ${e.message}`);
+            return res.status(500).send(`Error adding student to workspace: ${e.message}`);
         }
     }
     
